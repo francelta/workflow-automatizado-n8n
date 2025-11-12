@@ -1,0 +1,353 @@
+{
+  "name": "Blog to LinkedIn Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://blog.ejemplo.com/feed.xml",
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyHour"
+            }
+          ]
+        },
+        "options": {
+          "ignoreSSL": false
+        }
+      },
+      "id": "8c8c5237-5b44-4e89-a9f1-c5e8a9c3d1a1",
+      "name": "RSS Feed Reader",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.link }}",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": "h1.post-title",
+              "returnValue": "text"
+            },
+            {
+              "key": "content",
+              "cssSelector": "article.post-content",
+              "returnValue": "html"
+            },
+            {
+              "key": "author",
+              "cssSelector": ".author-name",
+              "returnValue": "text"
+            },
+            {
+              "key": "publishDate",
+              "cssSelector": "time.published",
+              "returnValue": "attribute",
+              "attributeName": "datetime"
+            },
+            {
+              "key": "excerpt",
+              "cssSelector": ".post-excerpt",
+              "returnValue": "text"
+            }
+          ]
+        },
+        "options": {
+          "cleanUpText": true,
+          "timeout": 30000
+        }
+      },
+      "id": "7b9d4f12-3c8e-4a7d-b2e5-9f1a8c6d4e2b",
+      "name": "Scrape Website",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "claude-3-haiku-20240307",
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 500,
+          "topP": 0.9
+        },
+        "text": "=Eres un experto en marketing de contenido para LinkedIn. Tu tarea es crear un post profesional y atractivo basado en el siguiente artículo.\n\n**Título:** {{ $json.title }}\n\n**Autor:** {{ $json.author }}\n\n**Contenido:** {{ $json.content }}\n\n**Instrucciones:**\n1. Resume los puntos clave del artículo en máximo 150 palabras\n2. Usa un tono profesional pero accesible\n3. Estructura el post con:\n   - Hook inicial (emoji + título atractivo)\n   - 3-5 puntos clave con bullets\n   - Call-to-action con pregunta para engagement\n4. Incluye 3-5 hashtags relevantes al final\n5. NO uses emojis excesivos, máximo 3-4 en todo el post\n6. El post debe ser conversacional pero profesional\n\n**Formato esperado:**\n🚀 [Hook con título]\n\n[Introducción corta]\n\n✓ Punto clave 1\n✓ Punto clave 2  \n✓ Punto clave 3\n\n[Pregunta para engagement]\n\n#Hashtag1 #Hashtag2 #Hashtag3",
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "Eres un asistente experto en crear contenido viral para LinkedIn. Conoces las mejores prácticas de engagement y cómo adaptar contenido técnico para audiencias profesionales."
+            }
+          ]
+        },
+        "resource": "chat",
+        "operation": "message"
+      },
+      "id": "3f7e2a91-6d5c-4b8f-a3d2-8e9f1c4b5a6d",
+      "name": "AI Agent - Claude Haiku",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "1",
+          "name": "Anthropic Claude API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "post",
+        "operation": "create",
+        "text": "={{ $json.summary }}\n\n🔗 Lee el artículo completo: {{ $('RSS Feed Reader').item.json.link }}",
+        "visibility": "public",
+        "options": {
+          "mediaCategory": "ARTICLE"
+        }
+      },
+      "id": "5d2c9b84-1f7a-4e3c-b8d6-3a5e7c9f2b1d",
+      "name": "LinkedIn Post",
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        850,
+        300
+      ],
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "2",
+          "name": "LinkedIn OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.category }}",
+              "operation": "contains",
+              "value2": "Tech"
+            }
+          ]
+        }
+      },
+      "id": "9e4f7a82-3b6c-4d1e-a7f5-2c8d9b1e4a3f",
+      "name": "Filter - Only Tech Articles",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        350,
+        300
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "functionCode": "// Limpiar y procesar el contenido extraído\nconst content = $json.content;\n\n// Remover HTML tags\nconst cleanContent = content.replace(/<[^>]*>/g, ' ');\n\n// Truncar si es muy largo (max 5000 caracteres para el AI)\nconst truncatedContent = cleanContent.length > 5000 \n  ? cleanContent.substring(0, 5000) + '...'\n  : cleanContent;\n\n// Extraer palabras clave simples\nconst words = cleanContent.toLowerCase().split(/\\s+/);\nconst keywords = [...new Set(words)]\n  .filter(w => w.length > 5)\n  .slice(0, 10);\n\nreturn {\n  title: $json.title,\n  author: $json.author || 'Unknown',\n  content: truncatedContent,\n  originalLink: $('RSS Feed Reader').item.json.link,\n  publishDate: $json.publishDate,\n  keywords: keywords.join(', '),\n  excerpt: $json.excerpt || truncatedContent.substring(0, 200)\n};"
+      },
+      "id": "1a8f6c3e-9d2b-4f7a-b5e1-7c4d9a2f8e6b",
+      "name": "Process Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        550,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "messageType": "text",
+        "text": "=🎉 Nuevo post publicado en LinkedIn!\n\n📝 Artículo: {{ $json.title }}\n👤 Autor: {{ $json.author }}\n🔗 URL: {{ $json.postUrl }}\n⏰ Publicado: {{ $now.toLocaleString() }}",
+        "chatId": "#marketing-automation",
+        "options": {}
+      },
+      "id": "6b9e2f71-4c8d-3a5e-b7f9-1d4c8a6e2b5f",
+      "name": "Slack Notification",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "3",
+          "name": "Slack API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.error }}",
+              "operation": "contains",
+              "value2": "rate_limit"
+            }
+          ]
+        }
+      },
+      "id": "2d7f5a93-8e1c-4b6f-a9d2-5c7e1b4f9a8d",
+      "name": "Check Rate Limit Error",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        950,
+        400
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "amount": 3600,
+        "unit": "seconds"
+      },
+      "id": "8c3e7b91-2f4d-5a8e-b6c3-9d1f4e7a2b5c",
+      "name": "Wait 1 Hour",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        950,
+        500
+      ]
+    }
+  ],
+  "connections": {
+    "RSS Feed Reader": {
+      "main": [
+        [
+          {
+            "node": "Filter - Only Tech Articles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter - Only Tech Articles": {
+      "main": [
+        [
+          {
+            "node": "Scrape Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Website": {
+      "main": [
+        [
+          {
+            "node": "Process Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Content": {
+      "main": [
+        [
+          {
+            "node": "AI Agent - Claude Haiku",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent - Claude Haiku": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Post": {
+      "main": [
+        [
+          {
+            "node": "Check Rate Limit Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Rate Limit Error": {
+      "main": [
+        [
+          {
+            "node": "Slack Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 1 Hour",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1 Hour": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "error-handler-workflow"
+  },
+  "versionId": "1.0.0",
+  "id": "blog-to-linkedin-automation",
+  "meta": {
+    "instanceId": "self-hosted"
+  },
+  "tags": [
+    {
+      "id": "automation",
+      "name": "Automation"
+    },
+    {
+      "id": "ai-agent",
+      "name": "AI Agent"
+    },
+    {
+      "id": "social-media",
+      "name": "Social Media"
+    }
+  ]
+}
+

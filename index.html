@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Automatización con N8N - Demo</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #1f2937;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 1.1rem;
+        }
+
+        .workflow-container {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .workflow-visual {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .node {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            min-width: 150px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .node-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .node-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .arrow {
+            font-size: 2rem;
+            color: #667eea;
+        }
+
+        .mermaid-diagram {
+            background: #f9fafb;
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #667eea;
+            margin-bottom: 1.5rem;
+        }
+
+        .code-block {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .example-flow {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .flow-step {
+            background: #f3f4f6;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .flow-step-title {
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .benefit-card {
+            background: #f3f4f6;
+            padding: 1.5rem;
+            border-radius: 10px;
+            border-top: 3px solid #667eea;
+        }
+
+        .benefit-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .benefit-title {
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .workflow-visual {
+                flex-direction: column;
+            }
+
+            .arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 1rem; margin-bottom: 1rem;">
+                <img src="./n8n.png" alt="n8n logo" style="height: 60px; width: auto;" />
+                <h1 style="margin: 0;">Workflow de Automatización con IA</h1>
+            </div>
+            <p class="subtitle">De Blog a LinkedIn en Segundos, Completamente Automatizado</p>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">100%</div>
+                <div class="stat-label">Automatizado</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">15 min</div>
+                <div class="stat-label">Tiempo Ahorrado/Artículo</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">$0.04</div>
+                <div class="stat-label">Costo por Ejecución</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">5 hrs</div>
+                <div class="stat-label">Ahorro Mensual (20 artículos)</div>
+            </div>
+        </div>
+
+        <!-- Workflow Visual -->
+        <div class="workflow-container">
+            <h2>🔄 Flujo del Workflow</h2>
+            <div class="workflow-visual">
+                <div class="node" onclick="showNodeDetails('rss')">
+                    <div class="node-icon">📡</div>
+                    <div class="node-title">RSS Feed</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="node" onclick="showNodeDetails('scrape')">
+                    <div class="node-icon">🌐</div>
+                    <div class="node-title">Web Scraper</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="node" onclick="showNodeDetails('ai')">
+                    <div class="node-icon">🤖</div>
+                    <div class="node-title">AI Agent (Haiku)</div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="node" onclick="showNodeDetails('linkedin')">
+                    <div class="node-icon">📱</div>
+                    <div class="node-title">LinkedIn</div>
+                </div>
+            </div>
+
+            <div id="nodeDetails" style="background: #f3f4f6; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; display: none;">
+                <!-- Details will be populated by JS -->
+            </div>
+        </div>
+
+        <!-- Mermaid Diagram -->
+        <div class="workflow-container">
+            <h2>📊 Diagrama de Arquitectura</h2>
+            <div class="mermaid-diagram">
+                <div class="mermaid">
+                    graph LR
+                        A[📡 RSS Feed Trigger] --> B[🌐 Web Scraper]
+                        B --> C[🤖 AI Agent Claude Haiku]
+                        C --> D[📱 LinkedIn Post]
+                        
+                        style A fill:#3b82f6
+                        style B fill:#22c55e
+                        style C fill:#a78bfa
+                        style D fill:#0077b5
+                        
+                        A -->|Nuevo artículo detectado| B
+                        B -->|Contenido completo extraído| C
+                        C -->|Resumen profesional generado| D
+                        D -->|Post publicado| E[✅ Éxito]
+                </div>
+            </div>
+        </div>
+
+        <!-- Example Flow -->
+        <div class="demo-section">
+            <h2>📝 Ejemplo de Ejecución Real</h2>
+            <div class="example-flow">
+                <div class="flow-step">
+                    <div class="flow-step-title">1. Input (RSS Feed)</div>
+                    <div class="code-block">{
+  "title": "10 Patrones Avanzados de React",
+  "link": "https://blog.ejemplo.com/react-patterns",
+  "pubDate": "2024-11-12T10:00:00Z",
+  "description": "Los mejores patrones de React..."
+}</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-title">2. Scraping (2,500 palabras extraídas)</div>
+                    <div class="code-block">{
+  "title": "10 Patrones Avanzados de React",
+  "content": "Los patrones de diseño en React...",
+  "author": "Juan Pérez",
+  "wordCount": 2500
+}</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-title">3. AI Processing (Claude Haiku - 3 segundos)</div>
+                    <div class="code-block">{
+  "summary": "🎯 10 Patrones Avanzados de React...",
+  "tokens": 1500,
+  "cost": "$0.000375"
+}</div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-step-title">4. Output (LinkedIn Post)</div>
+                    <div style="background: white; padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
+                        <p style="color: #1f2937;">
+                            🎯 10 Patrones Avanzados de React que Transformarán tu Código<br><br>
+                            Si trabajas con React, estos patrones te ayudarán:<br><br>
+                            ✓ Compound Components - Para componentes flexibles<br>
+                            ✓ Custom Hooks - Reutilización de lógica<br>
+                            ✓ Higher-Order Components - Composición avanzada<br><br>
+                            ¿Cuál usas más en tus proyectos?<br><br>
+                            #React #JavaScript #WebDevelopment
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Benefits -->
+        <div class="demo-section">
+            <h2>✨ Ventajas del Workflow</h2>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon">⚡</div>
+                    <div class="benefit-title">Ahorro de Tiempo</div>
+                    <p style="color: #6b7280;">De 15 minutos manuales a 0 minutos automatizados por artículo</p>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">🎯</div>
+                    <div class="benefit-title">Consistencia</div>
+                    <p style="color: #6b7280;">Cada artículo se comparte con el mismo formato profesional</p>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">💰</div>
+                    <div class="benefit-title">Económico</div>
+                    <p style="color: #6b7280;">Solo $0.04 por ejecución con Claude Haiku</p>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">🚀</div>
+                    <div class="benefit-title">Escalable</div>
+                    <p style="color: #6b7280;">Funciona para 1 o 100 artículos al mes sin cambios</p>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">🎨</div>
+                    <div class="benefit-title">Calidad IA</div>
+                    <p style="color: #6b7280;">Claude Haiku genera resúmenes profesionales y atractivos</p>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">📊</div>
+                    <div class="benefit-title">Analytics</div>
+                    <p style="color: #6b7280;">N8N proporciona logs y métricas de cada ejecución</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tech Stack -->
+        <div class="demo-section">
+            <h2>🛠️ Stack Tecnológico</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="display: flex; justify-content: center; align-items: center; height: 50px;">
+                        <img src="./n8n.png" alt="n8n" style="height: 40px; width: auto;" />
+                    </div>
+                    <strong style="margin-top: 0.5rem; display: block;">n8n</strong>
+                    <p style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">Workflow Automation</p>
+                </div>
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem;">📡</div>
+                    <strong>RSS</strong>
+                    <p style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">Content Detection</p>
+                </div>
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem;">🌐</div>
+                    <strong>Web Scraping</strong>
+                    <p style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">Content Extraction</p>
+                </div>
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem;">🤖</div>
+                    <strong>Claude Haiku</strong>
+                    <p style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">AI Summarization</p>
+                </div>
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 2rem;">📱</div>
+                    <strong>LinkedIn API</strong>
+                    <p style="font-size: 0.875rem; color: #6b7280; margin-top: 0.5rem;">Social Publishing</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROI Calculator -->
+        <div class="demo-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h2 style="color: white;">💡 Calculadora de ROI</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem;">
+                <div>
+                    <h3 style="margin-bottom: 1rem;">Sin Automatización</h3>
+                    <ul style="list-style: none; line-height: 2;">
+                        <li>⏰ 15 min por artículo</li>
+                        <li>📝 20 artículos/mes = 5 horas</li>
+                        <li>💵 Valor tiempo ($50/hr) = $250</li>
+                        <li>❌ Costo de no publicar algunos</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 1rem;">Con Automatización</h3>
+                    <ul style="list-style: none; line-height: 2;">
+                        <li>⚡ 0 min por artículo</li>
+                        <li>✅ 20 artículos/mes = 0 horas</li>
+                        <li>💰 Costo n8n + IA = $20.04</li>
+                        <li>✨ 100% de artículos compartidos</li>
+                    </ul>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.3);">
+                <div style="font-size: 2.5rem; font-weight: 700;">💰 ROI: 1,145%</div>
+                <p style="opacity: 0.9; margin-top: 0.5rem;">Ahorras $230/mes ($250 - $20) por solo $20 de inversión</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default'
+        });
+
+        // Node details data
+        const nodeData = {
+            rss: {
+                title: '📡 RSS Feed Reader',
+                description: 'Monitorea el feed RSS del blog cada hora buscando nuevos artículos.',
+                features: [
+                    'Polling cada hora',
+                    'Detección automática de nuevos posts',
+                    'Extrae título, URL y descripción',
+                    'Trigger del workflow'
+                ],
+                config: `{
+  "url": "https://blog.ejemplo.com/feed.xml",
+  "pollTimes": { "mode": "everyHour" }
+}`
+            },
+            scrape: {
+                title: '🌐 Web Scraper',
+                description: 'Extrae el contenido completo del artículo desde la URL.',
+                features: [
+                    'Extrae contenido HTML completo',
+                    'Limpia tags innecesarios',
+                    'Obtiene autor y fecha',
+                    'Timeout de 30 segundos'
+                ],
+                config: `{
+  "cssSelector": "article.post-content",
+  "returnValue": "html",
+  "cleanUpText": true
+}`
+            },
+            ai: {
+                title: '🤖 AI Agent - Claude Haiku',
+                description: 'Genera resumen profesional para LinkedIn usando IA.',
+                features: [
+                    'Modelo: Claude 3 Haiku',
+                    'Resumen en 150 palabras',
+                    'Genera hashtags relevantes',
+                    'Respuesta en <3 segundos'
+                ],
+                config: `{
+  "model": "claude-3-haiku-20240307",
+  "temperature": 0.7,
+  "maxTokens": 500,
+  "cost": "$0.000375 por ejecución"
+}`
+            },
+            linkedin: {
+                title: '📱 LinkedIn Post',
+                description: 'Publica el resumen generado en LinkedIn automáticamente.',
+                features: [
+                    'OAuth2 authentication',
+                    'Post público',
+                    'Incluye link al artículo',
+                    'Retorna URL del post'
+                ],
+                config: `{
+  "visibility": "public",
+  "text": "{{ $json.summary }}",
+  "mediaCategory": "ARTICLE"
+}`
+            }
+        };
+
+        function showNodeDetails(nodeId) {
+            const data = nodeData[nodeId];
+            const detailsDiv = document.getElementById('nodeDetails');
+            
+            detailsDiv.innerHTML = `
+                <h3 style="color: #667eea; margin-bottom: 1rem;">${data.title}</h3>
+                <p style="margin-bottom: 1rem;">${data.description}</p>
+                <h4 style="margin-bottom: 0.5rem;">Características:</h4>
+                <ul style="margin-bottom: 1rem; margin-left: 1.5rem;">
+                    ${data.features.map(f => `<li>${f}</li>`).join('')}
+                </ul>
+                <h4 style="margin-bottom: 0.5rem;">Configuración:</h4>
+                <pre style="background: #1f2937; color: #e5e7eb; padding: 1rem; border-radius: 6px; overflow-x: auto;">${data.config}</pre>
+            `;
+            
+            detailsDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+
